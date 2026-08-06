@@ -1,0 +1,5 @@
+# Проверки для изменённых Go-файлов.
+# golangci-lint работает на уровне пакетов — прогоняем весь модуль.
+"*.go":
+  - gofmt -w
+  - sh ../../scripts/lint-staged-golangci.sh

@@ -1,0 +1,11 @@
+apis:
+  main:
+    root: api/openapi/openapi.yaml
+
+extends:
+  - recommended
+
+rules:
+  no-unused-components: off
+  # Auth в шаблоне пока нет — включить обратно, когда появится security scheme.
+  security-defined: off

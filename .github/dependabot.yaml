@@ -1,0 +1,35 @@
+# Автообновление зависимостей: GitHub Actions, Go-модули, npm/bun, базовые docker-образы.
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: gomod
+    directory: /apps/api
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /apps/site
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories:
+      - /deploy/docker/dev
+      - /deploy/docker/local
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker-compose
+    directories:
+      - /deploy/compose/dev
+      - /deploy/compose/local
+    schedule:
+      interval: weekly

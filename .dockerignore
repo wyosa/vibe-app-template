@@ -1,0 +1,25 @@
+# Контекст сборки — корень репозитория. Исключаем всё тяжёлое и ненужное для образов.
+
+**/.git
+**/.gitignore
+**/.qwen
+**/.vscode
+**/.idea
+**/node_modules
+**/dist
+**/dist-ssr
+**/coverage
+**/tmp
+**/*.log
+
+# Локальные артефакты и кэши
+**/.eslintcache
+**/*.tsbuildinfo
+**/.DS_Store
+
+# Docker/deploy в контекст не нужны (кроме файлов, которые COPY'ятся явно)
+deploy/compose
+
+# Документация в образы не входит
+docs
+*.md

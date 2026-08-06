@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: App API
+  version: 0.1.0
+  description: Backend API
+
+# Все пути начинаются с /api: фронтенд ходит same-origin
+# (vite proxy в dev, nginx в local), CORS не нужен.
+# Базовый URL — корень того же origin, префикс /api уже в путях.
+servers:
+  - url: /
+
+tags:
+  - $ref: ./tags.yaml#/Health
+
+paths:
+  /api/healthz:
+    $ref: ./paths/health.yaml

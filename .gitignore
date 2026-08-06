@@ -1,0 +1,27 @@
+# OS
+.DS_Store
+
+# Editors / AI tools
+.idea/
+.qwen/
+*.swp
+*.swo
+
+# Generated OpenAPI bundle (восстанавливается: task api:bundle)
+api/dist/
+
+# Go
+apps/api/tmp/
+
+# Logs
+*.log
+
+# Node
+node_modules/
+
+# Env-секреты. Шаблоны (.env.example) коммитим, реальные .env — нет (создаёт task init).
+.env
+!.env.example
+
+# Артефакты playwright MCP (снапшоты, консольные логи)
+.playwright-mcp/

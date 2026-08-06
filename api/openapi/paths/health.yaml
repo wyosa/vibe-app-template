@@ -1,0 +1,13 @@
+get:
+  operationId: getHealth
+  tags:
+    - health
+  summary: Health check
+  description: Returns service health status.
+  responses:
+    "200":
+      description: Service is healthy
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/health.yaml#/HealthResponse

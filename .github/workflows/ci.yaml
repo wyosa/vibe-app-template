@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Format check
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "::error::Go-код не отформатирован. Выполни 'task api:fmt' и закоммить результат."
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: apps/api
+
+  site:
+    name: Site (Vue)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bunx oxfmt --check src/
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Type-check
+        run: bun run type-check
+
+      - name: Test
+        run: bun run test:unit run
+
+      - name: Build
+        run: bun run build-only
+
+  contract:
+    name: OpenAPI contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install site dependencies
+        run: bun install --frozen-lockfile
+        working-directory: apps/site
+
+      - name: Lint OpenAPI spec
+        run: npx --yes @redocly/cli@latest lint
+
+      - name: Generate code from spec
+        run: |
+          npx --yes @redocly/cli@latest bundle api/openapi/openapi.yaml --output api/dist/api.bundled.yaml
+          (cd apps/api && go generate ./...)
+          (cd apps/site && bun run generate:api)
+
+      - name: Generated code is up to date
+        run: |
+          paths="apps/api/internal/delivery/http/gen apps/site/src/types/api"
+          if [ -n "$(git status --porcelain -- $paths)" ]; then
+            echo "::error::Сгенерированный код устарел. Выполни 'task gen' и закоммить результат."
+            git status --porcelain -- $paths
+            git diff -- $paths | head -100
+            exit 1
+          fi
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare compose env
+        run: cp deploy/compose/local/.env.example deploy/compose/local/.env
+
+      - name: Build local stack images
+        run: docker compose -f deploy/compose/local/compose.yaml build

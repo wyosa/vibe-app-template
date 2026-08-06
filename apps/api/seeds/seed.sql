@@ -1,0 +1,7 @@
+-- Сиды для dev-окружения.
+-- Применяются командой `task seed` через psql в dev-контейнере PostgreSQL.
+-- Добавь сюда INSERT'ы с тестовыми данными. Пример:
+--
+-- INSERT INTO users (email, name) VALUES
+--   ('dev@example.com', 'Dev User')
+-- ON CONFLICT DO NOTHING;

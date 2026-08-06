@@ -1,0 +1,32 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Собрать бинарник
+    cmds:
+      - go build -o ./tmp/api ./cmd/api
+
+  run:
+    desc: Запустить без hotreload
+    cmds:
+      - go run ./cmd/api
+
+  test:
+    desc: Тесты
+    cmds:
+      - go test ./...
+
+  lint:
+    desc: golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: gofmt
+    cmds:
+      - gofmt -l -w .
+
+  gen:
+    desc: Кодогенерация из OpenAPI
+    cmds:
+      - go generate ./...
