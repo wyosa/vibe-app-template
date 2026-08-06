@@ -1,5 +1,3 @@
-# inka
-
 Monorepo starter template: Go backend + Vue SPA, spec-driven (OpenAPI), everything in Docker.
 
 ## Stack
