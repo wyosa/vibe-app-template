@@ -13,7 +13,7 @@ COPY apps/api/ ./
 # CGO выключен — бинарник статический, запускается на голом alpine.
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/api ./cmd/api
 
-FROM alpine:3.21
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates tzdata \
   && adduser -D -u 10001 app
