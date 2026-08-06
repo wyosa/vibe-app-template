@@ -1,24 +1,24 @@
 ---
-name: Баг
-about: Что-то работает не так, как ожидается
+name: Bug
+about: Something doesn't work as expected
 title: ""
 labels: bug
 ---
 
-## Что происходит
+## What happens
 
-<!-- Что случилось и что ожидалось вместо этого -->
+<!-- What happened and what you expected instead -->
 
-## Как воспроизвести
+## How to reproduce
 
 1. ...
 2. ...
 
-## Окружение
+## Environment
 
-- Стек (dev / local): ...
-- Ветка / коммит: ...
+- Stack (dev / local): ...
+- Branch / commit: ...
 
-## Логи
+## Logs
 
-<!-- task dc:dev:logs -- api / site, ошибки из консоли браузера -->
+<!-- task dc:dev:logs -- api / site, browser console errors -->

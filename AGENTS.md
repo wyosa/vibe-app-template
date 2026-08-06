@@ -1,59 +1,59 @@
 # AGENTS.md
 
-## Архитектура проекта
+## Project architecture
 
-В начале работы над любой задачей прочитай [`ARCHITECTURE.md`](./ARCHITECTURE.md) — это карта проекта: структура монорепо, стек (Go backend + Vue frontend), где лежит код и как он связан, процесс разработки (spec-driven → test-driven → реализация). Опирайся на него, прежде чем определять зону влияния правки.
+At the start of any task, read [`ARCHITECTURE.md`](./ARCHITECTURE.md) — it is the project map: monorepo structure, stack (Go backend + Vue frontend), where the code lives and how it is connected, the development process (spec-driven → test-driven → implementation). Rely on it before defining the blast radius of a change.
 
-## Комплексный подход к правкам
+## Comprehensive approach to changes
 
-Когда пользователь просит любую правку, подходи к задаче комплексно:
+When the user asks for any change, approach the task comprehensively:
 
-1. **Определи зону влияния.** Правка может затрагивать не только очевидное место. Проверь, нужны ли изменения в backend (`apps/api`, `api/`), в других приложениях (`apps/*`), в спецификациях (`api/openapi`) и документации (`docs/`).
-2. **Проследи связи.** Перед правкой найди все места системы (интерфейс, API, БД, скрипты), на которые она влияет, и учти их — чтобы система осталась согласованной и ничего не сломалось.
-3. **Проверь результат.** После правки убедись, что затронутые части работают вместе (запусти проверки/тесты, если они есть).
+1. **Define the blast radius.** A change may affect more than the obvious place. Check whether changes are needed in the backend (`apps/api`, `api/`), in other apps (`apps/*`), in the specs (`api/openapi`) and docs (`docs/`).
+2. **Trace the connections.** Before editing, find all the places in the system (UI, API, DB, scripts) the change affects and account for them — so the system stays consistent and nothing breaks.
+3. **Verify the result.** After the change, make sure the affected parts work together (run the checks/tests if they exist).
 
-Не ограничивайся точечным изменением — доводи задачу до конца во всех затронутых частях системы.
+Don't limit yourself to a point fix — carry the task through in every affected part of the system.
 
-## MCP-инструменты
+## MCP tools
 
-В проекте подключены MCP-серверы — используй их, а не гадай:
+MCP servers are connected in the project — use them instead of guessing:
 
-- **nuxt-ui** (`mcp__nuxt-ui__*`) — при любой правке фронтенда сначала обратись сюда: проверь, есть ли готовый компонент Nuxt UI, как он называется и какие у него props/слоты. Используй готовые компоненты вместо самописной вёрстки.
-- **context7** (`mcp__context7__*`) — актуальная документация библиотек (Nuxt UI, Vue, Go и т.д.). Сверяйся с ней, когда не уверен в API или синтаксисе, вместо ответов по памяти.
-- **playwright** (`mcp__playwright__*`) — управление браузером. См. правило ниже.
+- **nuxt-ui** (`mcp__nuxt-ui__*`) — for any frontend change, check here first: whether a ready-made Nuxt UI component exists, what it is called and which props/slots it has. Use ready-made components instead of hand-rolled markup.
+- **context7** (`mcp__context7__*`) — up-to-date library documentation (Nuxt UI, Vue, Go, etc.). Consult it when unsure about an API or syntax instead of answering from memory.
+- **playwright** (`mcp__playwright__*`) — browser control. See the rule below.
 
-## Обязательная проверка через браузер
+## Mandatory browser verification
 
-**После выполнения любой работы** (и фронтенд, и backend — правка API тоже отражается в интерфейсе) обязательно протестируй результат через **playwright**, прежде чем сообщать пользователю, что задача выполнена:
+**After completing any work** (frontend and backend alike — an API change is reflected in the UI too), always test the result via **playwright** before telling the user the task is done:
 
-1. Открой в браузере страницы, затронутые правкой.
-2. Проверь, что страница загружается без ошибок (включая ошибки в консоли), изменения реально отображаются, формы и кнопки работают.
-3. Если правка затрагивает backend — убедись через интерфейс, что данные приходят и сохраняются корректно.
-4. Если что-то сломано — исправь и протестируй снова. Задача считается выполненной только после успешной проверки в браузере.
+1. Open the pages affected by the change in the browser.
+2. Check that the page loads without errors (including console errors), the changes are actually displayed, and forms and buttons work.
+3. If the change touches the backend — verify through the UI that data arrives and saves correctly.
+4. If something is broken — fix it and test again. The task is considered done only after a successful browser check.
 
-Если локальные серверы не запущены, сначала подними их, потом тестируй. Если запустить браузерную проверку невозможно — прямо скажи об этом пользователю, не выдавай правку за проверенную.
+If the local servers are not running, start them first, then test. If browser verification is impossible — tell the user plainly; don't pass the change off as verified.
 
-## Окружение: только Docker
+## Environment: Docker only
 
-Все сервисы запускаются **только через Docker Compose** (Taskfile). Пользователь не работает с Docker напрямую — это твоя зона ответственности.
+All services run **only via Docker Compose** (Taskfile). The user does not work with Docker directly — that is your responsibility.
 
-- **Запрещено** поднимать процессы локально: никаких `bun run dev`, `go run`, `vite`, `npm run dev` и т.п. на хосте. Всё — только внутри контейнеров через `task`.
-- Стек запускается командой **`task dc:dev:up`** (а не `task:dev:up` — такого таска нет). Перед любым взаимодействием с веб-интерфейсом проверь, что стек поднят: `task dc:dev:ps`. Если не поднят — запусти `task dc:dev:up` и дождись готовности. Первичная настройка после клонирования — `task init`.
-- Адреса: интерфейс (CRM) — `http://localhost:5173`, API — `http://localhost:8080` (пути с префиксом `/api`, фронтенд ходит same-origin через vite proxy). В playwright всегда ходи на эти адреса.
-- После `dc:dev:up` убедись, что всё живо: `task smoke`. Если что-то не отвечает — смотри `task dc:dev:logs` и чини до рабочего состояния.
-- Перезапускать ничего вручную не нужно: исходники смонтированы в контейнеры, фронтенд (vite) и backend (air) пересобираются сами при изменении файлов. Если поведение подозрительное — `task dc:dev:restart`.
-- Если нужны миграции/сид данных: `task migrate`, `task seed` (они выполняются внутри dev-стека).
-- Перед коммитом прогоняй полную самопроверку: **`task check`** (fmt + lint + openapi + test + build). После изменения спеки — `task gen` (кодоген коммитится вместе со спекой). Шаблон спеки фичи — `docs/specs/feature.md`. В `apps/api/` и `apps/site/` есть свои AGENTS.md с конвенциями — соблюдай их.
+- **Forbidden** to run processes locally: no `bun run dev`, `go run`, `vite`, `npm run dev` etc. on the host. Everything — only inside containers via `task`.
+- The stack is started with **`task dc:dev:up`** (not `task:dev:up` — there is no such task). Before any interaction with the web UI, check that the stack is up: `task dc:dev:ps`. If not — run `task dc:dev:up` and wait for readiness. Initial setup after cloning — `task init`.
+- Addresses: UI (CRM) — `http://localhost:5173`, API — `http://localhost:8080` (paths prefixed with `/api`, the frontend calls same-origin via vite proxy). In playwright always use these addresses.
+- After `dc:dev:up` make sure everything is alive: `task smoke`. If something doesn't respond — check `task dc:dev:logs` and fix until it works.
+- No manual restarts needed: sources are mounted into the containers, frontend (vite) and backend (air) rebuild themselves on file changes. If the behavior is suspicious — `task dc:dev:restart`.
+- If migrations/seed data are needed: `task migrate`, `task seed` (they run inside the dev stack).
+- Before committing, run the full self-check: **`task check`** (fmt + lint + openapi + test + build). After changing the spec — `task gen` (codegen is committed together with the spec). Feature spec template — `docs/specs/feature.md`. `apps/api/` and `apps/site/` have their own AGENTS.md with conventions — follow them.
 
 ## Conventional Commits
 
-**После каждого завершённого изменения** (когда правка сделана и проверена в браузере) сразу делай git-коммит в формате [Conventional Commits](https://www.conventionalcommits.org/):
+**After every completed change** (once the change is made and verified in the browser), immediately make a git commit in [Conventional Commits](https://www.conventionalcommits.org/) format:
 
-- Формат: `<type>(<scope>): <описание>`, например `feat(crm): добавить фильтр заказов по статусу` или `fix(api): исправить расчёт итоговой суммы`.
-- Типы: `feat` — новая функция, `fix` — исправление, `refactor` — рефакторинг, `docs` — документация, `chore` — служебное, `style` — стили/вёрстка без логики.
-- Формат проверяется автоматически: commit-msg хук husky отклоняет коммиты вне Conventional Commits.
-- Один коммит = одно логическое изменение, не смешивай разные задачи в одном коммите.
-- Коммить только проверенный код — нерабочие правки не коммить.
-- `git push` не делать без явной просьбы пользователя.
+- Format: `<type>(<scope>): <description>`, e.g. `feat(crm): add order filter by status` or `fix(api): fix total amount calculation`.
+- Types: `feat` — new feature, `fix` — bug fix, `refactor` — refactoring, `docs` — documentation, `chore` — housekeeping, `style` — styles/markup without logic.
+- The format is enforced automatically: the husky commit-msg hook rejects commits outside Conventional Commits.
+- One commit = one logical change; don't mix different tasks in one commit.
+- Commit only verified code — don't commit broken changes.
+- Don't `git push` without an explicit request from the user.
 
-Это нужно для того, чтобы любое изменение можно было легко найти и откатить (`git revert` / `git reset`), если что-то пошло не так.
+This is needed so that any change can be easily found and rolled back (`git revert` / `git reset`) if something goes wrong.

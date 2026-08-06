@@ -1,17 +1,17 @@
 # AGENTS.md — frontend (apps/site)
 
-## Конвенции
+## Conventions
 
-- **Сначала nuxt-ui MCP** (`mcp__nuxt-ui__*`): ищи готовый компонент Nuxt UI, проверяй его
-  props/слоты. Самописную вёрстку не делай, если есть готовый компонент.
-- API — только через сгенерированный клиент `src/types/api` (HeyAPI). Руками не редактировать;
-  обновился контракт → `task site:gen` (или `task gen` из корня). Каталог коммитится в git
-  и не линтится (см. `eslint.config.ts`).
-- Клиент ходит на same-origin `/api`: в dev — vite proxy (`API_PROXY_TARGET`), в local — nginx.
-  Абсолютные URL и CORS не нужны, fetch в обход клиента не использовать.
-- Страницы — `pages/` + регистрация в `router/`, стейт — `stores/` (Pinia, setup-стиль),
-  переиспользуемое — `components/` и `composables/`. Заголовок вкладки — `usePageTitle`.
-- Тесты — `src/__tests__/`, Vitest + @vue/test-utils; вызовы API мокаются
-  `vi.mock('@/types/api')`.
-- Проверки перед коммитом: `bun run lint`, `bun run test:unit run`, `bun run type-check`
-  (или `task check` из корня).
+- **nuxt-ui MCP first** (`mcp__nuxt-ui__*`): look for a ready-made Nuxt UI component, check its
+  props/slots. Don't hand-roll markup if a ready-made component exists.
+- API — only via the generated client `src/types/api` (HeyAPI). Never edit it by hand;
+  contract updated → `task site:gen` (or `task gen` from the root). The directory is committed
+  to git and not linted (see `eslint.config.ts`).
+- The client calls same-origin `/api`: in dev — vite proxy (`API_PROXY_TARGET`), in local — nginx.
+  No absolute URLs or CORS needed; don't fetch around the client.
+- Pages — `pages/` + registration in `router/`, state — `stores/` (Pinia, setup style),
+  reusable pieces — `components/` and `composables/`. Tab title — `usePageTitle`.
+- Tests — `src/__tests__/`, Vitest + @vue/test-utils; API calls are mocked
+  with `vi.mock('@/types/api')`.
+- Pre-commit checks: `bun run lint`, `bun run test:unit run`, `bun run type-check`
+  (or `task check` from the root).

@@ -1,53 +1,53 @@
 # inka
 
-Стартовый шаблон монорепо: Go backend + Vue SPA, spec-driven (OpenAPI), всё в Docker.
+Monorepo starter template: Go backend + Vue SPA, spec-driven (OpenAPI), everything in Docker.
 
-## Стек
+## Stack
 
-- **Backend** — Go 1.26, Clean Architecture, PostgreSQL (sqlx + squirrel), миграции golang-migrate
+- **Backend** — Go 1.26, Clean Architecture, PostgreSQL (sqlx + squirrel), golang-migrate migrations
 - **Frontend** — Vue 3 (Vapor), Vite, Nuxt UI 4 + Tailwind 4, Pinia, Vue Router, Vitest
-- **API-контракт** — OpenAPI (Redocly) → кодоген сервера (oapi-codegen) и клиента (HeyAPI)
-- **Окружение** — Docker Compose (dev — hotreload, local — собранные образы), Taskfile
+- **API contract** — OpenAPI (Redocly) → server codegen (oapi-codegen) and client codegen (HeyAPI)
+- **Environment** — Docker Compose (dev — hotreload, local — built images), Taskfile
 
-## Требования
+## Requirements
 
 - Docker + docker compose
 - [Task](https://taskfile.dev) (`brew install go-task`)
-- Для локальных проверок и кодогенерации: Go 1.26+, bun, golangci-lint, golang-migrate
+- For local checks and codegen: Go 1.26+, bun, golangci-lint, golang-migrate
 
-## Быстрый старт
+## Quick start
 
 ```bash
-task init     # env-файлы из шаблонов, зависимости, dev-стек
+task init     # env files from templates, dependencies, dev stack
 ```
 
-- Интерфейс: http://localhost:5173
+- UI: http://localhost:5173
 - API: http://localhost:8080/api/healthz
 
-## Основные команды
+## Main commands
 
-| Команда           | Что делает                                               |
-| ----------------- | -------------------------------------------------------- |
-| `task dev`        | поднять dev-стек (hotreload) и проверить                 |
-| `task down`       | остановить dev-стек                                      |
-| `task smoke`      | проверить, что стек жив                                  |
-| `task check`      | полная самопроверка: fmt + lint + openapi + test + build |
-| `task gen`        | перегенерировать код из OpenAPI (сервер + клиент)        |
-| `task migrate`    | применить миграции                                       |
-| `task seed`       | применить сиды                                           |
-| `task --list-all` | все задачи                                               |
+| Command           | What it does                                         |
+| ----------------- | ---------------------------------------------------- |
+| `task dev`        | start the dev stack (hotreload) and verify it        |
+| `task down`       | stop the dev stack                                   |
+| `task smoke`      | check that the stack is alive                        |
+| `task check`      | full self-check: fmt + lint + openapi + test + build |
+| `task gen`        | regenerate code from OpenAPI (server + client)       |
+| `task migrate`    | apply migrations                                     |
+| `task seed`       | apply seeds                                          |
+| `task --list-all` | all tasks                                            |
 
-## Структура и процесс
+## Structure and process
 
-См. [ARCHITECTURE.md](./ARCHITECTURE.md) — карта монорепо и описание процесса
-(spec-driven → test-driven → реализация). Правила для AI-агентов — [AGENTS.md](./AGENTS.md)
-и вложенные `apps/*/AGENTS.md`. Шаблон спеки новой фичи — [docs/specs/feature.md](./docs/specs/feature.md).
+See [ARCHITECTURE.md](./ARCHITECTURE.md) — the monorepo map and the process description
+(spec-driven → test-driven → implementation). Rules for AI agents — [AGENTS.md](./AGENTS.md)
+and the nested `apps/*/AGENTS.md`. Feature spec template — [docs/specs/feature.md](./docs/specs/feature.md).
 
-## Переменные окружения
+## Environment variables
 
-- **Compose-стеки**: `deploy/compose/{dev,local}/.env` — создаются из `.env.example` командой
-  `task init`, в git не коммитятся.
-- **Backend**: `DATABASE_URL` (обязательная), `HTTP_PORT` (по умолчанию 8080), `APP_ENV` —
-  задаются в compose-файлах.
-- **Frontend**: API ходит на same-origin `/api`; в dev vite проксирует его на backend
-  (`API_PROXY_TARGET`, по умолчанию `http://localhost:8080`).
+- **Compose stacks**: `deploy/compose/{dev,local}/.env` — created from `.env.example` by
+  `task init`, not committed to git.
+- **Backend**: `DATABASE_URL` (required), `HTTP_PORT` (default 8080), `APP_ENV` —
+  set in compose files.
+- **Frontend**: the API goes to same-origin `/api`; in dev vite proxies it to the backend
+  (`API_PROXY_TARGET`, default `http://localhost:8080`).

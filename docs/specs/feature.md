@@ -1,45 +1,45 @@
-# <Название фичи>
+# <Feature name>
 
-<!-- Шаблон спеки новой фичи. Копируй в docs/specs/<имя>.md и заполняй. -->
+<!-- Template for a new feature spec. Copy to docs/specs/<name>.md and fill it in. -->
 
-## Цель
+## Goal
 
-Что и зачем делаем, 1–2 предложения. Какую проблему решаем.
+What and why we're doing it, 1–2 sentences. Which problem it solves.
 
-## Контракт (OpenAPI)
+## Contract (OpenAPI)
 
-Изменения в `api/openapi/`:
+Changes in `api/openapi/`:
 
-- Эндпоинты: `METHOD /api/...` — что делают, коды ответов
-- Модели: поля, обязательность, ограничения
-- Ошибки: 400/404/… — в каких случаях
+- Endpoints: `METHOD /api/...` — what they do, response codes
+- Models: fields, requiredness, constraints
+- Errors: 400/404/… — in which cases
 
-## База данных
+## Database
 
-- Миграция (`task migrate:create -- <имя>`): таблицы, колонки, индексы
-- Сиды (`apps/api/seeds/seed.sql`): какие тестовые данные
+- Migration (`task migrate:create -- <name>`): tables, columns, indexes
+- Seeds (`apps/api/seeds/seed.sql`): which test data
 
 ## Backend
 
-Слои (см. конвенции в `apps/api/AGENTS.md`):
+Layers (see conventions in `apps/api/AGENTS.md`):
 
-- `entity/` — доменная модель и ошибки
-- `repository/` — запросы (sqlx + squirrel), `sql.ErrNoRows` → доменный `ErrNotFound`
-- `usecase/` — бизнес-правила, зависимость на репозиторий через интерфейс
-- `delivery/http/handlers/` — маппинг gen-моделей и ошибок на HTTP
-- Тесты: usecase — unit с in-memory репозиторием; хендлер — сквозной httptest без БД
+- `entity/` — domain model and errors
+- `repository/` — queries (sqlx + squirrel), `sql.ErrNoRows` → domain `ErrNotFound`
+- `usecase/` — business rules, repository dependency via an interface
+- `delivery/http/handlers/` — mapping of gen models and errors to HTTP
+- Tests: usecase — unit with an in-memory repository; handler — end-to-end httptest without a DB
 
 ## Frontend
 
-- Страница + роут, стор (Pinia), компоненты Nuxt UI (сначала искать готовые через nuxt-ui MCP)
-- Вызовы API — только через сгенерированный клиент `src/types/api`
-- Тесты: стор/компонент с замоканным клиентом
+- Page + route, store (Pinia), Nuxt UI components (look for ready-made ones via nuxt-ui MCP first)
+- API calls — only via the generated client `src/types/api`
+- Tests: store/component with a mocked client
 
 ## Definition of done
 
-- [ ] Спека обновлена, `task api:contract` зелёный
-- [ ] Кодоген перегенерирован и закоммичен (`task gen`)
-- [ ] Тесты написаны до реализации и зелёные (`task test`)
-- [ ] `task check` зелёный
-- [ ] Проверено в браузере (playwright): страница открывается, формы работают, консоль чистая
-- [ ] Коммит в формате Conventional Commits
+- [ ] Spec updated, `task api:contract` is green
+- [ ] Codegen regenerated and committed (`task gen`)
+- [ ] Tests written before the implementation and green (`task test`)
+- [ ] `task check` is green
+- [ ] Verified in the browser (playwright): the page opens, forms work, console is clean
+- [ ] Commit in Conventional Commits format

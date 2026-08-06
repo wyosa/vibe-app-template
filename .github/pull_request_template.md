@@ -1,10 +1,10 @@
-## Что сделано
+## What was done
 
-<!-- Кратко: что и зачем. Ссылка на спеку (docs/specs), если есть. -->
+<!-- Briefly: what and why. Link to the spec (docs/specs), if any. -->
 
-## Самопроверка
+## Self-check
 
-- [ ] Если менялся API-контракт: спека обновлена, кодоген закоммичен (`task gen`)
-- [ ] Тесты написаны и зелёные (`task test`)
-- [ ] `task check` зелёный
-- [ ] Проверено в браузере: страницы открываются, данные приходят, консоль чистая
+- [ ] If the API contract changed: spec updated, codegen committed (`task gen`)
+- [ ] Tests written and green (`task test`)
+- [ ] `task check` is green
+- [ ] Verified in the browser: pages open, data arrives, console is clean

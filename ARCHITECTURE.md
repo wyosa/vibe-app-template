@@ -1,6 +1,6 @@
 # Architecture
 
-Монорепо с Go-бэкендом и Vue-фронтендом.
+Monorepo with a Go backend and a Vue frontend.
 
 ```
 .
@@ -8,80 +8,80 @@
 │   ├── api/          # Go backend
 │   └── site/         # Vue frontend
 ├── api/
-│   └── openapi/      # OpenAPI-спецификация (multi-file, Redocly)
+│   └── openapi/      # OpenAPI specification (multi-file, Redocly)
 ├── deploy/
 │   ├── docker/
-│   │   ├── dev/      # Dockerfile для разработки (hotreload)
-│   │   └── local/    # Dockerfile для локального запуска (сборка)
+│   │   ├── dev/      # Dockerfile for development (hotreload)
+│   │   └── local/    # Dockerfile for local run (build)
 │   └── compose/
 │       ├── dev/      # docker-compose: air + bun run dev
-│       └── local/    # docker-compose: бинарник + статика
+│       └── local/    # docker-compose: binary + static files
 ├── docs/
-│   └── specs/        # шаблоны спек фич (spec-driven процесс)
+│   └── specs/        # feature spec templates (spec-driven process)
 ├── scripts/
-├── Taskfile.yaml     # корневые задачи
+├── Taskfile.yaml     # root tasks
 └── redocly.yaml
 ```
 
-## Процесс разработки
+## Development process
 
-Spec-driven → test-driven → реализация.
+Spec-driven → test-driven → implementation.
 
-1. **Spec** — изменение начинается с OpenAPI-спецификации (`api/openapi/`). Контракт валидируется Redocly. Из спеки генерируется серверный код (`delivery/http/gen/`) и клиентский (`apps/site/src/types/api/`, HeyAPI). Шаблон спеки фичи — `docs/specs/feature.md`.
-2. **Tests** — под новый контракт пишутся тесты до реализации. Go — `go test`, фронтенд — Vitest.
-3. **Code** — реализуется бизнес-логика (usecase → repository), хендлеры подключаются к сгенерированному интерфейсу. На клиенте — страницы и сторы поверх сгенерированных типов и функций.
+1. **Spec** — a change starts with the OpenAPI spec (`api/openapi/`). The contract is validated by Redocly. Server code (`delivery/http/gen/`) and client code (`apps/site/src/types/api/`, HeyAPI) are generated from the spec. Feature spec template — `docs/specs/feature.md`.
+2. **Tests** — tests for the new contract are written before the implementation. Go — `go test`, frontend — Vitest.
+3. **Code** — business logic is implemented (usecase → repository), handlers are wired to the generated interface. On the client — pages and stores on top of the generated types and functions.
 
 ## Backend — `apps/api`
 
-Go 1.26, Clean Architecture. Зависимости потока: delivery → usecase → repository → entity.
+Go 1.26, Clean Architecture. Dependency flow: delivery → usecase → repository → entity.
 
 ```
 apps/api/
-├── cmd/api/              # точка входа
+├── cmd/api/              # entry point
 ├── internal/
-│   ├── app/              # композиция (DI-контейнер, запуск)
-│   ├── config/           # конфигурация из env
+│   ├── app/              # composition (DI container, startup)
+│   ├── config/           # configuration from env
 │   ├── delivery/http/
-│   │   ├── gen/          # сгенерированный код из OpenAPI
-│   │   ├── handlers/     # HTTP-хендлеры (объединяются в handlers.API)
-│   │   ├── middlewares/    # recovery + request-id + request-logging
-│   │   └── server/       # HTTP-сервер
-│   ├── entity/           # доменные модели
-│   ├── repository/       # работа с PostgreSQL (sqlx + squirrel)
-│   └── usecase/          # бизнес-логика
-├── migrations/           # SQL-миграции (golang-migrate)
-├── pkg/                  # переиспользуемые пакеты (logger и т.д.)
+│   │   ├── gen/          # code generated from OpenAPI
+│   │   ├── handlers/     # HTTP handlers (combined into handlers.API)
+│   │   ├── middlewares/  # recovery + request-id + request-logging
+│   │   └── server/       # HTTP server
+│   ├── entity/           # domain models
+│   ├── repository/       # PostgreSQL access (sqlx + squirrel)
+│   └── usecase/          # business logic
+├── migrations/           # SQL migrations (golang-migrate)
+├── pkg/                  # reusable packages (logger etc.)
 └── Taskfile.yaml
 ```
 
 ### Data store
 
-PostgreSQL. Доступ через `sqlx` + `squirrel` (placeholder `$1`). Транзакции — обёртка `sqlxTransaction` в `internal/repository/transaction.go`. Миграции — `golang-migrate`, лежат в `migrations/`.
+PostgreSQL. Access via `sqlx` + `squirrel` (`$1` placeholders). Transactions — the `sqlxTransaction` wrapper in `internal/repository/transaction.go`. Migrations — `golang-migrate`, live in `migrations/`.
 
-### API-контракт
+### API contract
 
-OpenAPI-спецификация в `api/openapi/` (multi-file: `paths/`, `components/`, `tags.yaml`). Валидация и сборка — Redocly (`redocly.yaml`). Кодогенерация — в `internal/delivery/http/gen/`.
+OpenAPI specification in `api/openapi/` (multi-file: `paths/`, `components/`, `tags.yaml`). Validation and bundling — Redocly (`redocly.yaml`). Codegen — into `internal/delivery/http/gen/`.
 
-Все пути — с префиксом `/api`. Фронтенд ходит **same-origin**: в dev vite проксирует `/api`
-на backend (`API_PROXY_TARGET`), в local — nginx. CORS не нужен, абсолютные URL не используются.
+All paths have the `/api` prefix. The frontend calls **same-origin**: in dev vite proxies `/api`
+to the backend (`API_PROXY_TARGET`), in local — nginx. No CORS needed, no absolute URLs.
 
 ## Frontend — `apps/site`
 
 Vue 3 (Vapor), Vite 8, TypeScript.
 
-| Слой       | Технология                  |
-| ---------- | --------------------------- |
-| UI-кит     | Nuxt UI 4                   |
-| Стили      | Tailwind CSS 4              |
-| Стейт      | Pinia 4                     |
-| Роутинг    | Vue Router 5                |
-| Линтер     | oxlint + eslint             |
-| Форматтер  | oxfmt                       |
-| API-клиент | HeyAPI (codegen из OpenAPI) |
-| Тесты      | Vitest + @vue/test-utils    |
+| Layer      | Technology                    |
+| ---------- | ----------------------------- |
+| UI kit     | Nuxt UI 4                     |
+| Styles     | Tailwind CSS 4                |
+| State      | Pinia 4                       |
+| Routing    | Vue Router 5                  |
+| Linter     | oxlint + eslint               |
+| Formatter  | oxfmt                         |
+| API client | HeyAPI (codegen from OpenAPI) |
+| Tests      | Vitest + @vue/test-utils      |
 
-Сгенерированный клиент (`src/types/api/`) коммитится в git и не линтится; перегенерация —
-`task site:gen`, дрейф ловит CI.
+The generated client (`src/types/api/`) is committed to git and is not linted; regeneration —
+`task site:gen`, drift is caught by CI.
 
 ```
 apps/site/src/
@@ -92,17 +92,17 @@ apps/site/src/
 ├── router/
 ├── stores/
 ├── types/
-│   └── api/          # сгенерированный HeyAPI-клиент
+│   └── api/          # generated HeyAPI client
 ├── utils/
 └── assets/
 ```
 
 ## Deploy
 
-### `deploy/compose/dev` — разработка
+### `deploy/compose/dev` — development
 
-Hotreload: **air** для Go, **bun run dev** для фронтенда. Dockerfile в `deploy/docker/dev/`.
+Hotreload: **air** for Go, **bun run dev** for the frontend. Dockerfile in `deploy/docker/dev/`.
 
-### `deploy/compose/local` — локальный запуск
+### `deploy/compose/local` — local run
 
-Собранный Go-бинарник + статика фронтенда. Dockerfile в `deploy/docker/local/`.
+Built Go binary + frontend static files. Dockerfile in `deploy/docker/local/`.

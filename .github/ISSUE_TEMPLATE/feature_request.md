@@ -1,15 +1,15 @@
 ---
-name: Фича
-about: Новая функциональность или улучшение
+name: Feature
+about: New functionality or improvement
 title: ""
 labels: enhancement
 ---
 
-## Цель
+## Goal
 
-<!-- Что и зачем делаем, какую проблему решаем -->
+<!-- What and why we're doing it, which problem it solves -->
 
-## Предложение
+## Proposal
 
-<!-- Как видишь реализацию. Для новых фичей процесс начинается со спеки:
-     скопируй docs/specs/feature.md в docs/specs/<имя>.md и заполни -->
+<!-- How you see the implementation. For new features the process starts with a spec:
+     copy docs/specs/feature.md to docs/specs/<name>.md and fill it in -->
