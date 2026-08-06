@@ -1,0 +1,371 @@
+# https://taskfile.dev
+#
+# Все сервисы поднимаются только через Docker Compose.
+# Задачи lint/test/fmt/gen выполняются на хосте (это dev-инструменты, не серверы).
+#
+# Быстрый старт:
+#   task dev          # поднять dev-стек и проверить его
+#   task smoke        # проверить, что стек жив
+#   task --list-all   # все доступные задачи
+
+version: "3"
+
+vars:
+  # Compose-файлы
+  DEV_COMPOSE: deploy/compose/dev/compose.yaml
+  LOCAL_COMPOSE: deploy/compose/local/compose.yaml
+
+  # PostgreSQL (dev) — должны совпадать с deploy/compose/dev/.env
+  POSTGRES_USER: app
+  POSTGRES_PASSWORD: app
+  POSTGRES_DB: app
+  POSTGRES_PORT: "5432"
+  DEV_DATABASE_URL: "postgres://{{.POSTGRES_USER}}:{{.POSTGRES_PASSWORD}}@localhost:{{.POSTGRES_PORT}}/{{.POSTGRES_DB}}?sslmode=disable"
+
+  # Адреса dev-стека (см. deploy/compose/dev/.env)
+  SITE_URL: http://localhost:5173
+  API_URL: http://localhost:8080
+
+  # Пути
+  API_DIR: apps/api
+  SITE_DIR: apps/site
+  MIGRATIONS_DIR: apps/api/migrations
+  SEEDS_DIR: apps/api/seeds
+
+tasks:
+  # ─────────────────────────────────────────────────────────────
+  # Быстрый старт
+  # ─────────────────────────────────────────────────────────────
+
+  default:
+    desc: Показать шпаргалку по командам
+    silent: true
+    cmds:
+      - |
+        echo "Основные команды:"
+        echo "  task init           первичная настройка после клонирования"
+        echo "  task dev            поднять dev-стек (hotreload) и проверить его"
+        echo "  task down           остановить dev-стек"
+        echo "  task smoke          проверить, что стек жив"
+        echo "  task check          полная самопроверка (fmt + lint + openapi + test + build)"
+        echo "  task migrate        применить миграции БД"
+        echo "  task seed           применить сиды"
+        echo "  task gen            сгенерировать код (клиент + go generate)"
+        echo "  task lint | test    линтеры / тесты"
+        echo "  task dc:local:up    поднять собранный (local) стек"
+        echo ""
+        echo "Все задачи: task --list-all"
+
+  # ─────────────────────────────────────────────────────────────
+  # Первичная настройка
+  # ─────────────────────────────────────────────────────────────
+
+  init:
+    desc: Первичная настройка после клонирования (env, зависимости, dev-стек)
+    cmds:
+      - |
+        for f in deploy/compose/dev deploy/compose/local; do
+          if [ ! -f "$f/.env" ]; then
+            cp "$f/.env.example" "$f/.env"
+            echo "создан $f/.env из шаблона"
+          fi
+        done
+      - bun install
+      - cmd: bun install
+        dir: "{{.SITE_DIR}}"
+      - task: dc:dev:up
+      - task: smoke
+      - |
+        echo ""
+        echo "Готово. Интерфейс: {{.SITE_URL}}, API: {{.API_URL}}/api/healthz"
+        echo "Тестовые данные: task seed. Миграции применяются сами при старте api."
+
+  dev:
+    desc: Поднять dev-стек и сразу проверить его
+    cmds:
+      - task: dc:dev:up
+      - task: smoke
+
+  down:
+    desc: Остановить dev-стек
+    cmds:
+      - task: dc:dev:down
+
+  # ─────────────────────────────────────────────────────────────
+  # Docker Compose — dev (hotreload: air + bun run dev)
+  # ─────────────────────────────────────────────────────────────
+
+  dc:dev:up:
+    desc: Поднять dev-стек (со сборкой образов)
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} up -d --build
+
+  dc:dev:down:
+    desc: Остановить и удалить dev-стек
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} down
+
+  dc:dev:ps:
+    desc: Статус dev-стека
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} ps
+
+  dc:dev:logs:
+    desc: Логи dev-стека (можно сузить до сервиса — task dc:dev:logs -- api)
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} logs -f {{.CLI_ARGS}}
+
+  dc:dev:restart:
+    desc: Перезапустить dev-стек
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} restart {{.CLI_ARGS}}
+
+  dc:dev:stop:
+    desc: Остановить dev-стек без удаления
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} stop {{.CLI_ARGS}}
+
+  dc:dev:build:
+    desc: Собрать образы dev-стека
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} build {{.CLI_ARGS}}
+
+  # ─────────────────────────────────────────────────────────────
+  # Docker Compose — local (собранный бинарник + nginx)
+  # ─────────────────────────────────────────────────────────────
+
+  dc:local:up:
+    desc: Поднять local-стек (со сборкой образов)
+    cmds:
+      - docker compose -f {{.LOCAL_COMPOSE}} up -d --build
+
+  dc:local:down:
+    desc: Остановить и удалить local-стек
+    cmds:
+      - docker compose -f {{.LOCAL_COMPOSE}} down
+
+  dc:local:ps:
+    desc: Статус local-стека
+    cmds:
+      - docker compose -f {{.LOCAL_COMPOSE}} ps
+
+  dc:local:logs:
+    desc: Логи local-стека
+    cmds:
+      - docker compose -f {{.LOCAL_COMPOSE}} logs -f {{.CLI_ARGS}}
+
+  dc:local:build:
+    desc: Собрать образы local-стека
+    cmds:
+      - docker compose -f {{.LOCAL_COMPOSE}} build {{.CLI_ARGS}}
+
+  # ─────────────────────────────────────────────────────────────
+  # База данных
+  # ─────────────────────────────────────────────────────────────
+
+  migrate:
+    desc: Применить миграции БД (dev)
+    preconditions:
+      - sh: docker compose -f {{.DEV_COMPOSE}} ps postgres --status running --quiet | grep -q .
+        msg: "PostgreSQL не запущен. Сначала подними стек: task dc:dev:up"
+    cmds:
+      - migrate -path {{.MIGRATIONS_DIR}} -database "{{.DEV_DATABASE_URL}}" up
+
+  migrate:down:
+    desc: Откатить последнюю миграцию
+    preconditions:
+      - sh: docker compose -f {{.DEV_COMPOSE}} ps postgres --status running --quiet | grep -q .
+        msg: "PostgreSQL не запущен. Сначала подними стек: task dc:dev:up"
+    cmds:
+      - migrate -path {{.MIGRATIONS_DIR}} -database "{{.DEV_DATABASE_URL}}" down 1
+
+  migrate:status:
+    desc: Текущая версия миграций
+    preconditions:
+      - sh: docker compose -f {{.DEV_COMPOSE}} ps postgres --status running --quiet | grep -q .
+        msg: "PostgreSQL не запущен. Сначала подними стек: task dc:dev:up"
+    cmds:
+      - migrate -path {{.MIGRATIONS_DIR}} -database "{{.DEV_DATABASE_URL}}" version
+
+  migrate:create:
+    desc: Создать новую миграцию (task migrate:create -- <имя>)
+    cmds:
+      - migrate create -ext sql -dir {{.MIGRATIONS_DIR}} -seq -digits 6 {{.CLI_ARGS}}
+
+  seed:
+    desc: Применить сиды из apps/api/seeds/seed.sql (dev)
+    preconditions:
+      - sh: docker compose -f {{.DEV_COMPOSE}} ps postgres --status running --quiet | grep -q .
+        msg: "PostgreSQL не запущен. Сначала подними стек: task dc:dev:up"
+    cmds:
+      - |
+        if [ -f {{.SEEDS_DIR}}/seed.sql ]; then
+          docker compose -f {{.DEV_COMPOSE}} exec -T postgres \
+            psql -U {{.POSTGRES_USER}} -d {{.POSTGRES_DB}} -v ON_ERROR_STOP=1 < {{.SEEDS_DIR}}/seed.sql
+        else
+          echo "Нет файла {{.SEEDS_DIR}}/seed.sql — сидировать нечего."
+        fi
+
+  # ─────────────────────────────────────────────────────────────
+  # Проверка работоспособности
+  # ─────────────────────────────────────────────────────────────
+
+  smoke:
+    desc: Проверить, что dev-стек жив (postgres, site, api)
+    cmds:
+      - docker compose -f {{.DEV_COMPOSE}} ps
+      - |
+        echo "→ postgres"
+        docker compose -f {{.DEV_COMPOSE}} exec -T postgres \
+          pg_isready -U {{.POSTGRES_USER}} -d {{.POSTGRES_DB}}
+      - |
+        echo "→ site ({{.SITE_URL}})"
+        curl -fsS -o /dev/null -w "  site: HTTP %{http_code}\n" {{.SITE_URL}}
+      - |
+        echo "→ api ({{.API_URL}})"
+        curl -fsS -o /dev/null -w "  api: HTTP %{http_code}\n" {{.API_URL}}/api/healthz
+
+  # ─────────────────────────────────────────────────────────────
+  # Кодогенерация
+  # ─────────────────────────────────────────────────────────────
+
+  gen:
+    desc: Сгенерировать код (API-клиент + go generate)
+    cmds:
+      - task: api:gen
+      - task: site:gen
+
+  api:bundle:
+    desc: Собрать OpenAPI-спек в один файл (Redocly)
+    cmds:
+      - npx --yes @redocly/cli@latest bundle api/openapi/openapi.yaml --output api/dist/api.bundled.yaml
+
+  api:contract:
+    desc: Валидация OpenAPI-спеки (Redocly lint)
+    cmds:
+      - npx --yes @redocly/cli@latest lint
+
+  api:gen:
+    desc: Кодогенерация сервера из OpenAPI
+    dir: "{{.API_DIR}}"
+    cmds:
+      - task: api:bundle
+      - go generate ./...
+
+  site:gen:
+    desc: Сгенерировать TS-клиент из OpenAPI (HeyAPI)
+    dir: "{{.SITE_DIR}}"
+    cmds:
+      - bun run generate:api
+
+  # ─────────────────────────────────────────────────────────────
+  # Линтеры
+  # ─────────────────────────────────────────────────────────────
+
+  lint:
+    desc: Линтеры (api + site)
+    cmds:
+      - task: api:lint
+      - task: site:lint
+
+  api:lint:
+    desc: golangci-lint для backend
+    dir: "{{.API_DIR}}"
+    cmds:
+      - golangci-lint run ./...
+
+  site:lint:
+    desc: oxlint + eslint для frontend
+    dir: "{{.SITE_DIR}}"
+    cmds:
+      - bun run lint
+
+  # ─────────────────────────────────────────────────────────────
+  # Тесты
+  # ─────────────────────────────────────────────────────────────
+
+  test:
+    desc: Тесты (api + site)
+    cmds:
+      - task: api:test
+      - task: site:test
+
+  api:test:
+    desc: go test для backend
+    dir: "{{.API_DIR}}"
+    cmds:
+      - go test ./...
+
+  site:test:
+    desc: Vitest для frontend (однократный прогон)
+    dir: "{{.SITE_DIR}}"
+    cmds:
+      - bun run test:unit run
+
+  # ─────────────────────────────────────────────────────────────
+  # Форматирование
+  # ─────────────────────────────────────────────────────────────
+
+  fmt:
+    desc: Форматирование (api + site)
+    cmds:
+      - task: api:fmt
+      - task: site:fmt
+
+  api:fmt:
+    desc: gofmt для backend
+    dir: "{{.API_DIR}}"
+    cmds:
+      - gofmt -l -w .
+
+  site:fmt:
+    desc: oxfmt для frontend
+    dir: "{{.SITE_DIR}}"
+    cmds:
+      - bun run format
+
+  # ─────────────────────────────────────────────────────────────
+  # Сборка
+  # ─────────────────────────────────────────────────────────────
+
+  build:
+    desc: Собрать api и site
+    cmds:
+      - task: api:build
+      - task: site:build
+
+  api:build:
+    desc: Собрать бинарник backend
+    dir: "{{.API_DIR}}"
+    cmds:
+      - go build -o ./tmp/api ./cmd/api
+
+  site:build:
+    desc: Собрать frontend (vite build + type-check)
+    dir: "{{.SITE_DIR}}"
+    cmds:
+      - bun run build
+
+  # ─────────────────────────────────────────────────────────────
+  # Полная самопроверка
+  # ─────────────────────────────────────────────────────────────
+
+  check:
+    desc: Полная самопроверка (fmt + lint + openapi + test + build)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: api:contract
+      - task: test
+      - task: build
+
+  # ─────────────────────────────────────────────────────────────
+  # Очистка
+  # ─────────────────────────────────────────────────────────────
+
+  clean:
+    desc: Удалить артефакты сборки
+    cmds:
+      - rm -rf {{.API_DIR}}/tmp
+      - rm -rf {{.SITE_DIR}}/dist
+      - rm -rf {{.SITE_DIR}}/coverage

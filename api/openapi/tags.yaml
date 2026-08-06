@@ -1,0 +1,3 @@
+Health:
+  name: health
+  description: Health check endpoints

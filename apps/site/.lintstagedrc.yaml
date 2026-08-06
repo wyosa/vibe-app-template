@@ -1,0 +1,6 @@
+# Проверки для изменённых файлов frontend.
+# lint-staged запускает команды с cwd = apps/site, пути — относительные.
+"*.{ts,tsx,js,mjs,cjs,vue}":
+  - bunx eslint --fix --cache
+  - bunx oxlint --fix
+  - bunx oxfmt

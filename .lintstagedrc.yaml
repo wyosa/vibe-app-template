@@ -1,0 +1,3 @@
+# Корневые файлы: форматирование через oxfmt.
+"*.{json,yaml,yml,md,css,scss}":
+  - bunx oxfmt

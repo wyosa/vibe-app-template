@@ -1,0 +1,11 @@
+# Проверка формата Conventional Commits: <type>(<scope>): <описание>
+# Мерж-коммиты (git merge / revert через GitHub) не проверяем.
+grep -qE '^Merge ' "$1" && exit 0
+
+if ! grep -qE '^(feat|fix|refactor|docs|chore|style|test|perf|build|ci|revert)(\([a-zA-Z0-9/._-]+\))?!?: .+' "$1"; then
+  echo "✖ Коммит отклонён: сообщение должно быть в формате Conventional Commits."
+  echo "  Формат: <type>(<scope>): <описание>   (scope и ! необязательны)"
+  echo "  Типы:   feat fix refactor docs chore style test perf build ci revert"
+  echo "  Пример: feat(crm): добавить фильтр заказов по статусу"
+  exit 1
+fi

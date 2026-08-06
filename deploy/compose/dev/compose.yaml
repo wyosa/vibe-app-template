@@ -1,0 +1,66 @@
+# Dev-стек: hotreload. backend — air, frontend — vite (bun run dev).
+# Контекст сборки — корень репозитория (../../..).
+name: app-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/dev/api.dockerfile
+    environment:
+      APP_ENV: development
+      HTTP_PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      # Исходники с хоста — air пересобирает на лету.
+      - ../../../apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # air пересобирает приложение при старте — даём на это start_period.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/api/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
+
+  site:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/dev/site.dockerfile
+    environment:
+      NODE_ENV: development
+      # vite проксирует /api на backend-сервис (см. vite.config.ts)
+      API_PROXY_TARGET: http://api:8080
+    ports:
+      - "${SITE_PORT:-5173}:5173"
+    volumes:
+      # Исходники с хоста — vite обновляет страницу на лету.
+      - ../../../apps/site:/app
+      # node_modules из образа не затираются хостом.
+      - /app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
