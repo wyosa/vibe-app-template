@@ -16,7 +16,7 @@ func TestRequestID_GeneratesAndPropagates(t *testing.T) {
 		gotFromCtx = RequestIDFromContext(r.Context())
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
 	RequestID(next).ServeHTTP(rec, req)
@@ -33,7 +33,7 @@ func TestRequestID_KeepsIncomingHeader(t *testing.T) {
 		require.Equal(t, "incoming-id", RequestIDFromContext(r.Context()))
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.Header.Set(RequestIDHeader, "incoming-id")
 	rec := httptest.NewRecorder()
 
