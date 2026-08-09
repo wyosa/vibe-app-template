@@ -1,6 +1,7 @@
-# Проверки для изменённых файлов frontend.
-# lint-staged запускает команды с cwd = apps/site, пути — относительные.
-"*.{ts,tsx,js,mjs,cjs,vue}":
-  - bunx eslint --fix --cache
+# Frontend: форматирование изменённых файлов + быстрый линт кода.
+# Полный eslint прогоняется в pre-push (`task lint`) и CI — он медленнее.
+'**/*.{ts,vue}':
+  - bunx oxfmt
   - bunx oxlint --fix
+'**/*.{css,json,yaml,yml,md}':
   - bunx oxfmt

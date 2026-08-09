@@ -1,5 +1,6 @@
-# Проверки для изменённых Go-файлов.
-# golangci-lint работает на уровне пакетов — прогоняем весь модуль.
-"*.go":
+# Go: форматирование + линт всего модуля.
+# golangci-lint работает на уровне пакетов, поэтому пути файлов игнорируются
+# (см. scripts/lint-staged-golangci.sh) — прогоняется весь модуль.
+"**/*.go":
   - gofmt -w
-  - sh ../../scripts/lint-staged-golangci.sh
+  - ../../scripts/lint-staged-golangci.sh

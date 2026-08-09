@@ -1,3 +1,3 @@
-# Корневые файлы: форматирование через oxfmt.
-"*.{json,yaml,yml,md,css,scss}":
+# Файлы вне apps/* (у них свои конфиги рядом с кодом): форматирование через oxfmt.
+"**/*.{json,yaml,yml,md,css,scss}":
   - bunx oxfmt
