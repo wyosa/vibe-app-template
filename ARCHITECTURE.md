@@ -43,7 +43,7 @@ apps/api/
 │   ├── config/           # configuration from env
 │   ├── delivery/http/
 │   │   ├── gen/          # code generated from OpenAPI
-│   │   ├── handlers/     # HTTP handlers (combined into handlers.API)
+│   │   ├── handlers/     # HTTP handlers
 │   │   ├── middlewares/  # recovery + request-id + request-logging
 │   │   └── server/       # HTTP server
 │   ├── entity/           # domain models
@@ -67,7 +67,7 @@ to the backend (`API_PROXY_TARGET`), in local — nginx. No CORS needed, no abso
 
 ## Frontend — `apps/site`
 
-Vue 3 (Vapor), Vite 8, TypeScript.
+Vue 3, Vite 8, TypeScript.
 
 | Layer      | Technology                    |
 | ---------- | ----------------------------- |

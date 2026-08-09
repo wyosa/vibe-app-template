@@ -3,7 +3,7 @@ Monorepo starter template: Go backend + Vue SPA, spec-driven (OpenAPI), everythi
 ## Stack
 
 - **Backend** — Go 1.26, Clean Architecture, PostgreSQL (sqlx + squirrel), golang-migrate migrations
-- **Frontend** — Vue 3 (Vapor), Vite, Nuxt UI 4 + Tailwind 4, Pinia, Vue Router, Vitest
+- **Frontend** — Vue 3, Vite, Nuxt UI 4 + Tailwind 4, Pinia, Vue Router, Vitest
 - **API contract** — OpenAPI (Redocly) → server codegen (oapi-codegen) and client codegen (HeyAPI)
 - **Environment** — Docker Compose (dev — hotreload, local — built images), Taskfile
 
