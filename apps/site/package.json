@@ -63,6 +63,9 @@
     "@vue/runtime-vapor": "rc",
     "@vue/server-renderer": "rc",
     "@vue/shared": "rc",
+    "esbuild": "^0.28.1",
+    "js-yaml": "^4.3.0",
+    "nanoid": "^3.3.17",
     "vue": "rc"
   },
   "engines": {
