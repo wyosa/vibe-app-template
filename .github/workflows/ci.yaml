@@ -5,10 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+# Один активный прогон на ветку: новый пуш отменяет предыдущий (на main — нет).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   api:
     name: API (Go)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: apps/api
@@ -31,8 +37,18 @@ jobs:
       - name: Build
         run: go build ./...
 
-      - name: Test
-        run: go test ./...
+      - name: Test (с покрытием)
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Coverage report
+        run: go tool cover -func=coverage.out | tail -1
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/coverage.out
+          retention-days: 7
 
       - name: Lint
         uses: golangci/golangci-lint-action@v8
@@ -42,6 +58,7 @@ jobs:
   site:
     name: Site (Vue)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: apps/site
@@ -64,8 +81,15 @@ jobs:
       - name: Type-check
         run: bun run type-check
 
-      - name: Test
-        run: bun run test:unit run
+      - name: Test (с покрытием)
+        run: bun run test:unit run --coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-coverage
+          path: apps/site/coverage/
+          retention-days: 7
 
       - name: Build
         run: bun run build-only
@@ -73,6 +97,7 @@ jobs:
   contract:
     name: OpenAPI contract
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -100,17 +125,117 @@ jobs:
 
       - name: Generated code is up to date
         run: |
-          paths="apps/api/internal/delivery/http/gen apps/site/src/types/api"
-          if [ -n "$(git status --porcelain -- $paths)" ]; then
+          paths=(apps/api/internal/delivery/http/gen apps/site/src/types/api)
+          if [ -n "$(git status --porcelain -- "${paths[@]}")" ]; then
             echo "::error::Сгенерированный код устарел. Выполни 'task gen' и закоммить результат."
-            git status --porcelain -- $paths
-            git diff -- $paths | head -100
+            git status --porcelain -- "${paths[@]}"
+            git diff -- "${paths[@]}" | head -100
             exit 1
           fi
+
+  migrations:
+    name: DB migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install golang-migrate + psql
+        run: |
+          curl -fsSL https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz | tar xz
+          sudo mv migrate /usr/local/bin/
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Migrate up → down → up
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+        run: |
+          migrate -path apps/api/migrations -database "$DATABASE_URL" up
+          migrate -path apps/api/migrations -database "$DATABASE_URL" down 1
+          migrate -path apps/api/migrations -database "$DATABASE_URL" up
+
+      - name: Seeds apply cleanly
+        run: |
+          if [ -f apps/api/seeds/seed.sql ]; then
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f apps/api/seeds/seed.sql
+          else
+            echo "Нет apps/api/seeds/seed.sql — пропуск."
+          fi
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: govulncheck (Go)
+        working-directory: apps/api
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - name: bun audit (JS)
+        run: |
+          bun audit
+          (cd apps/site && bun install --frozen-lockfile && bun audit)
+
+      - name: gitleaks (секреты)
+        run: |
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar xz gitleaks
+          ./gitleaks git --verbose .
+
+  infra:
+    name: Infra lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - name: actionlint (GitHub workflows)
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          actionlint
+
+      - name: hadolint (Dockerfiles)
+        run: |
+          for f in deploy/docker/*/*.dockerfile; do
+            echo "→ $f"
+            docker run --rm -i -v "$PWD:/work" -w /work hadolint/hadolint:v2.15.1-alpine < "$f"
+          done
 
   docker:
     name: Docker images
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

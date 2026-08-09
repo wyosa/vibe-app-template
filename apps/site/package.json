@@ -29,6 +29,7 @@
     "@types/jsdom": "^28.0.3",
     "@types/node": "^24.13.3",
     "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vitest/eslint-plugin": "^1.6.23",
     "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.4.11",
@@ -49,11 +50,8 @@
     "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "^3.3.7"
   },
-  "engines": {
-    "node": "^22.18.0 || >=24.12.0"
-  },
   "overrides": {
-    "vue": "rc",
+    "@vue/compat": "rc",
     "@vue/compiler-core": "rc",
     "@vue/compiler-dom": "rc",
     "@vue/compiler-sfc": "rc",
@@ -65,6 +63,9 @@
     "@vue/runtime-vapor": "rc",
     "@vue/server-renderer": "rc",
     "@vue/shared": "rc",
-    "@vue/compat": "rc"
+    "vue": "rc"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
   }
 }

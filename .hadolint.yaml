@@ -1,0 +1,6 @@
+# https://github.com/hadolint/hadolint#configure
+ignored:
+  # apk-пакеты не пинуются: версии плавают вместе с базовым образом alpine.
+  - DL3018
+  # USER задаётся именем — uid фиксирован флагом -u у adduser.
+  - DL3066

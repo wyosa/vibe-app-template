@@ -16,6 +16,10 @@ apps/api/tmp/
 # Logs
 *.log
 
+# Покрытие тестами
+coverage/
+apps/api/coverage.out
+
 # Node
 node_modules/
 
